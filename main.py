@@ -11,8 +11,6 @@ import numpy as np
 import tqdm
 import math
 import h5py
-from sklearn.metrics import f1_score, precision_score, \
-    recall_score, accuracy_score
 
 
 def main():
@@ -81,14 +79,14 @@ def main():
     test_h5 = h5py.File(args.validpath, 'r')
 
     terminal_dict = {w: i for i, w in enumerate(
-        sorted([w for w, c in terminal_counter.items() if c > 1]))}
+        sorted([w for w, c in terminal_counter.items() if c > 2]))}
     terminal_dict["<unk>"] = len(terminal_dict)
     terminal_dict["<pad>"] = len(terminal_dict)
     path_dict = {w: i for i, w in enumerate(sorted(path_counter.keys()))}
     path_dict["<unk>"] = len(path_dict)
     path_dict["<pad>"] = len(path_dict)
     target_dict = {w: i for i, w in enumerate(
-        sorted([w for w, c in target_counter.items() if c > 1]))}
+        sorted([w for w, c in target_counter.items() if c > 2]))}
     target_dict["<unk>"] = len(target_dict)
     target_dict["<bos>"] = len(target_dict)
     target_dict["<pad>"] = len(target_dict)
@@ -113,13 +111,15 @@ def main():
                    terminal_dict, path_dict, target_dict, device),
         batch_size=args.batchsize,
         shuffle=False, num_workers=args.num_worker)
-    optimizer = optim.SGD(c2v.parameters(), lr=0.01,
-                          momentum=0.95, nesterov=True)
     """
+    optimizer = optim.SGD(c2v.parameters(), lr=0.02,
+                          momentum=0.95, weight_decay=0.01)
     scheduler = optim.lr_scheduler.LambdaLR(
         optimizer,
         lr_lambda=lambda e: 0.01 * pow(0.95, (e * args.batchsize / args.trainnum)))
     """
+    optimizer = torch.optim.Adam(c2v.parameters(), lr=0.02, betas=(
+        0.9, 0.999), eps=1e-08, weight_decay=0.001, amsgrad=False)
     for epoch in range(args.epoch):
         sum_loss = 0
         for data in tqdm.tqdm(trainloader):
@@ -139,9 +139,9 @@ def main():
             false_positive += false_positive_
             false_negative += false_negative_
 
-        pre_score, rec_score, f_score = calculate_results(
+        pre_score, rec_score, f1_score = calculate_results(
             true_positive, false_positive, false_negative)
-        print("f1:", f_score, "pre:", pre_score,
+        print("f1:", f1_score, "prec:", pre_score,
               "rec:", rec_score)
         torch.save(c2v.state_dict(), args.savename + str(epoch) + ".model")
     torch.save(c2v.state_dict(), args.savename + ".model")

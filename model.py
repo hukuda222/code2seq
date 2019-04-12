@@ -4,8 +4,6 @@ from torch.nn.parameter import Parameter
 import torch.nn.functional as F
 import math
 import pickle
-from sklearn.metrics import f1_score, precision_score, \
-    recall_score, accuracy_score
 import numpy as np
 
 NINF = -3.4 * math.pow(10, 38)
@@ -129,6 +127,7 @@ class Code2Vec(nn.Module):
         combined_context_vectors = self.input_dropout(
             combined_context_vectors)
 
+        # どうせ使わないので<bos>が入っている一つ目のやつを消してる
         if not is_eval:
             outputs = self.train_decode(
                 combined_context_vectors, context_mask, targets)
@@ -142,7 +141,6 @@ class Code2Vec(nn.Module):
         true_positive, false_positive, false_negative = 0, 0, 0
         batch, _, _ = output.size()
         predict = torch.argmax(output, 2)
-
         for pre, tar in zip(predict, targets):
             for pre_word in pre:
                 if pre_word == self.target_dict["<eos>"]:

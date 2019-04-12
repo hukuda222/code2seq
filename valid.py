@@ -92,6 +92,7 @@ def main():
     target_dict["<unk>"] = len(target_dict)
     target_dict["<bos>"] = len(target_dict)
     target_dict["<pad>"] = len(target_dict)
+    target_dict["<eos>"] = len(target_dict)
 
     c2v = Code2Vec(args, terminal_vocab_size=len(terminal_dict),
                    path_element_vocab_size=len(path_dict),
