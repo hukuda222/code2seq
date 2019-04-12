@@ -243,8 +243,8 @@ class Code2Vec(nn.Module):
             # こっちはあとで使う
             output_ = F.log_softmax(
                 self.output_linear(output), dim=1)
-            output = F.argmax(output_)
-            output = self.target_element_embedding(output).unsqueeze(1)
+            output = torch.argmax(output_, dim=1)
+            output = self.target_element_embedding(output)
 
             all_output = torch.cat([all_output, output_.unsqueeze(1)], dim=1)
 

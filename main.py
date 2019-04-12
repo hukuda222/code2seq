@@ -53,7 +53,7 @@ def main():
                         help='length of path')
     parser.add_argument('--target_length', type=int, default=7,
                         help='length of target')
-    parser.add_argument('--eval', action="store_false",
+    parser.add_argument('--eval', action="store_true",
                         help='is eval')
     parser.add_argument('--path_rnn_drop', type=float, default=0.5,
                         help='drop rate of path rnn')
@@ -121,16 +121,17 @@ def main():
     optimizer = torch.optim.Adam(c2v.parameters(), lr=0.02, betas=(
         0.9, 0.999), eps=1e-08, weight_decay=0.001, amsgrad=False)
     for epoch in range(args.epoch):
-        sum_loss = 0
-        for data in tqdm.tqdm(trainloader):
-            # scheduler.step()
-            optimizer.zero_grad()
-            loss = c2v(*data, is_eval=False)
-            loss.backward()
-            optimizer.step()
-            sum_loss += loss.item()
-        print(epoch, sum_loss)
-        sum_loss = 0
+        if not args.eval:
+            sum_loss = 0
+            for data in tqdm.tqdm(trainloader):
+                # scheduler.step()
+                optimizer.zero_grad()
+                loss = c2v(*data, is_eval=False)
+                loss.backward()
+                optimizer.step()
+                sum_loss += loss.item()
+            print(epoch, sum_loss)
+            sum_loss = 0
         true_positive, false_positive, false_negative = 0, 0, 0
         for data in tqdm.tqdm(validloader):
             true_positive_, false_positive_, false_negative_ = c2v(
@@ -143,6 +144,8 @@ def main():
             true_positive, false_positive, false_negative)
         print("f1:", f1_score, "prec:", pre_score,
               "rec:", rec_score)
+        if args.eval:
+            break
         torch.save(c2v.state_dict(), args.savename + str(epoch) + ".model")
     torch.save(c2v.state_dict(), args.savename + ".model")
 
