@@ -92,16 +92,16 @@ class Code2Vec(nn.Module):
         # paddingを良い感じに処理するやつ
 
         ordered_len, ordered_idx = path_length.view(
-            batch*max_e, ).sort(0, descending=True)
+            batch * max_e, ).sort(0, descending=True)
         embed_element_path_packed = nn.utils.rnn.pack_padded_sequence(
             embed_element_path, ordered_len, batch_first=True)
 
         # pathの方をもう一回sortするのがなんか難しそうなので
         embed_fasttext_start = torch.index_select(
-            embed_fasttext_start.view(batch*max_e, -1), 0, ordered_idx).\
+            embed_fasttext_start.view(batch * max_e, -1), 0, ordered_idx).\
             view(batch, max_e, self.terminal_embed_size)
         embed_fasttext_end = torch.index_select(
-            embed_fasttext_end.view(batch*max_e, -1), 0, ordered_idx).\
+            embed_fasttext_end.view(batch * max_e, -1), 0, ordered_idx).\
             view(batch, max_e, self.terminal_embed_size)
 
         # 隠れ層の初期値はall_zeroのやつ こいつは(batch*max_e, path_rnn_size)
@@ -119,7 +119,7 @@ class Code2Vec(nn.Module):
         # ここまでがencoder
         # 最終的にできるのは、(batch,max_e,decode_size)
         combined_context_vectors = self.input_linear(
-            combined_context_vectors.view(batch*max_e, -1)).view(batch, max_e, -1)
+            combined_context_vectors.view(batch * max_e, -1)).view(batch, max_e, -1)
         ccv_size = combined_context_vectors.size()
         combined_context_vectors = self.input_layer_norm(
             combined_context_vectors.view(-1, self.decode_size)).view(ccv_size)
@@ -163,7 +163,7 @@ class Code2Vec(nn.Module):
     def train_decode(self, encode_context, context_mask, targets):
         batch, max_e, _ = encode_context.size()
         true_output = self.target_element_embedding(targets.view(
-            batch*self.generate_target_size, -1)).view(batch, self.generate_target_size, -1)
+            batch * self.generate_target_size, -1)).view(batch, self.generate_target_size, -1)
 
         context_length = torch.sum(context_mask > 0)
         # これできるの？
@@ -171,12 +171,13 @@ class Code2Vec(nn.Module):
         init_state = torch.sum(encode_context, 1) / context_length
 
         # encode_contextは (batch,max_e,encode_size)であるが、encode_size=decode_size
-        h_t = init_state
-        c_t = init_state
+        # ここは勾配を取らない
+        h_t = init_state.clone()
+        c_t = init_state.clone()
         all_output = torch.zeros(
             batch, 1, self.target_vocab_size).to(self.device)
 
-        for i in range(self.generate_target_size-1):
+        for i in range(self.generate_target_size - 1):
             # h_tは(batch,decode_size)
             h_t, c_t = self.decoder_rnn(
                 true_output[:, i], (h_t, c_t))
@@ -215,12 +216,13 @@ class Code2Vec(nn.Module):
         init_state = torch.sum(encode_context, 1) / context_length
 
         # encode_contextは (batch,max_e,encode_size)であるが、encode_size=decode_size
+        # 多分勾配を使わないような気もする
         h_t = init_state
         c_t = init_state
         all_output = torch.zeros(
             batch, 1, self.target_vocab_size).to(self.device)
 
-        for i in range(self.generate_target_size-1):
+        for i in range(self.generate_target_size - 1):
             # h_tは(batch,decode_size)
             h_t, c_t = self.decoder_rnn(output, (h_t, c_t))
 
@@ -238,8 +240,12 @@ class Code2Vec(nn.Module):
                                 encode_context).squeeze(1)
             h_tc = torch.cat([h_t, context], dim=1)
             output = F.tanh(self.Whc(h_tc))
+            # こっちはあとで使う
             output_ = F.log_softmax(
-                self.output_linear(output), dim=1).unsqueeze(1)
-            all_output = torch.cat([all_output, output_], dim=1)
+                self.output_linear(output), dim=1)
+            output = F.argmax(output_)
+            output = self.target_element_embedding(output).unsqueeze(1)
+
+            all_output = torch.cat([all_output, output_.unsqueeze(1)], dim=1)
 
         return all_output
