@@ -96,20 +96,14 @@ class Code2Vec(nn.Module):
         embed_element_path_packed = nn.utils.rnn.pack_padded_sequence(
             embed_element_path, ordered_len, batch_first=True)
 
-        # pathの方をもう一回sortするのがなんか難しそうなので
-        embed_fasttext_start = torch.index_select(
-            embed_fasttext_start.view(batch * max_e, -1), 0, ordered_idx).\
-            view(batch, max_e, self.terminal_embed_size)
-        embed_fasttext_end = torch.index_select(
-            embed_fasttext_end.view(batch * max_e, -1), 0, ordered_idx).\
-            view(batch, max_e, self.terminal_embed_size)
-
         # 隠れ層の初期値はall_zeroのやつ こいつは(batch*max_e, path_rnn_size)
         _, (hn, cn) = self.path_rnn(
             embed_element_path_packed)
 
-        rnn_embed_path = hn.view(
-            batch, max_e, self.path_rnn_size)
+        # sortしたのを元に戻す
+        rnn_embed_path = torch.index_select(
+            hn.view(batch * max_e, self.path_rnn_size), 0, ordered_idx).\
+            view(batch, max_e, self.path_rnn_size)
 
         # (batch,max_e,path_rnn_size+decode_size*2)
         combined_context_vectors = torch.cat(

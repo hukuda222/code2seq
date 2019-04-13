@@ -39,7 +39,7 @@ def main():
     parser.add_argument('--validpath',
                         default="./data/java14m/java14m.val.c2v",
                         help='path of valid data')
-    parser.add_argument('--savename', default="output",
+    parser.add_argument('--savename', default="",
                         help='name of saved model')
     parser.add_argument('--trainnum', type=int, default=15344512,
                         help='size of train data')
@@ -111,15 +111,16 @@ def main():
                    terminal_dict, path_dict, target_dict, device),
         batch_size=args.batchsize,
         shuffle=False, num_workers=args.num_worker)
-    """
-    optimizer = optim.SGD(c2v.parameters(), lr=0.02,
+    
+    optimizer = optim.SGD(c2v.parameters(), lr=0.01,
                           momentum=0.95, weight_decay=0.01)
+    """
     scheduler = optim.lr_scheduler.LambdaLR(
         optimizer,
         lr_lambda=lambda e: 0.01 * pow(0.95, (e * args.batchsize / args.trainnum)))
+    optimizer = torch.optim.Adam(c2v.parameters(), lr=0.01, betas=(
+        0.9, 0.999), eps=1e-08,  amsgrad=True)
     """
-    optimizer = torch.optim.Adam(c2v.parameters(), lr=0.02, betas=(
-        0.9, 0.999), eps=1e-08, weight_decay=0.001, amsgrad=False)
     for epoch in range(args.epoch):
         if not args.eval:
             sum_loss = 0
@@ -146,8 +147,10 @@ def main():
               "rec:", rec_score)
         if args.eval:
             break
-        torch.save(c2v.state_dict(), args.savename + str(epoch) + ".model")
-    torch.save(c2v.state_dict(), args.savename + ".model")
+        if args.savename != "":
+            torch.save(c2v.state_dict(), args.savename + str(epoch) + ".model")
+    if args.savename != "":
+        torch.save(c2v.state_dict(), args.savename + ".model")
 
 
 def calculate_results(true_positive, false_positive, false_negative):
