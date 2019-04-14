@@ -5,14 +5,6 @@ import torch.nn.functional as F
 import math
 import pickle
 import numpy as np
-import math
-NINF = -3.4 * math.pow(10, 38)
-"""
-contextの形式は、
-[terminalの単語ID]
-[pathのhash]
-[terminalの単語ID]
-"""
 
 
 class Code2Vec(nn.Module):
@@ -74,8 +66,7 @@ class Code2Vec(nn.Module):
         self.Whc = nn.Linear(self.encode_size + decode_size, decode_size)
         self.output_linear = nn.Linear(decode_size, self.target_vocab_size)
 
-        self.loss = nn.NLLLoss(
-            ignore_index=self.target_dict["<pad>"], reduction="sum")
+        self.loss = nn.NLLLoss(reduction="none")
 
     def forward(self, starts, paths, ends, targets, context_mask, start_mask,
                 path_length, end_mask, target_mask, is_eval):
@@ -140,7 +131,8 @@ class Code2Vec(nn.Module):
         if not is_eval:
             outputs = self.train_decode(
                 combined_context_vectors, context_mask, targets)
-            return self.loss(outputs[:, 1:].permute(0, 2, 1), targets[:, 1:])/batch
+            return torch.sum(self.loss(outputs[:, 1:].permute(0, 2, 1),
+                                       targets[:, 1:]) * target_mask) / batch
         else:
             outputs = self.valid_decode(
                 combined_context_vectors, context_mask, targets)
@@ -172,10 +164,10 @@ class Code2Vec(nn.Module):
     def train_decode(self, encode_context, context_mask, targets):
         batch, max_e, _ = encode_context.size()
         true_output = self.target_element_embedding(targets.view(
-            batch * self.generate_target_size, -1)).view(batch, self.generate_target_size, -1)
+            batch * self.generate_target_size, -1)).\
+            view(batch, self.generate_target_size, -1)
 
         context_length = torch.sum(context_mask > 0)
-        # これできるの？
         # (batch,encode_size)/(batch,1) のはず
         init_state = torch.sum(encode_context, 1) / context_length
 
@@ -216,7 +208,8 @@ class Code2Vec(nn.Module):
         output = self.target_element_embedding(output)
         """
         self.target_element_embedding(torch.ones(
-            batch, 1,  dtype=torch.long).to(self.device)*self.target_dict["<bos>"])
+            batch, 1,  dtype=torch.long).to(self.device)\
+              *self.target_dict["<bos>"])
         """
         context_length = torch.sum(context_mask > 0)
 
