@@ -144,7 +144,7 @@ class Code2Vec(nn.Module):
         predict = torch.argmax(output, 2)
         for pre, tar in zip(predict, targets):
             for pre_word in pre:
-                if pre_word == self.target_dict["<eos>"]:
+                if pre_word == self.target_dict["<pad>"]:
                     break
                 elif pre_word != self.target_dict["<pad>"] and \
                         pre_word != self.target_dict["<unk>"]:
@@ -154,8 +154,7 @@ class Code2Vec(nn.Module):
                         false_positive += 1
             for tar_word in tar:
                 if tar_word != self.target_dict["<pad>"] and \
-                    tar_word != self.target_dict["<unk>"] and \
-                        tar_word != self.target_dict["<eos>"]:
+                        tar_word != self.target_dict["<unk>"]:
                     if tar_word not in pre:
                         false_negative += 1
 

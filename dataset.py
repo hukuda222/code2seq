@@ -82,21 +82,21 @@ class C2VDataSet(Dataset):
             context_mask.append(1)
 
         pad_length = self.max_context_length - len(context_mask)
-        paths += [[[self.path_dict["<pad>"]
-                    for i in range(self.max_path_length)]]
+        paths += [[self.path_dict["<pad>"]
+                   for i in range(self.max_path_length)]
                   for j in range(pad_length)]
         path_length += [1] * pad_length  # 0はダメらしい(あとでattentionを0にするので多分大丈夫)
-        starts += [[[self.terminal_dict["<pad>"]
-                     for i in range(self.max_terminal_length)]]
+        starts += [[self.terminal_dict["<pad>"]
+                    for i in range(self.max_terminal_length)]
                    for j in range(pad_length)]
         start_mask += \
-            [[[0 for i in range(self.max_terminal_length)]]
+            [[0 for i in range(self.max_terminal_length)]
              for j in range(pad_length)]
-        ends += [[[self.terminal_dict["<pad>"]
-                   for i in range(self.max_terminal_length)]]
+        ends += [[self.terminal_dict["<pad>"]
+                  for i in range(self.max_terminal_length)]
                  for j in range(pad_length)]
         end_mask += \
-            [[[0 for i in range(self.max_terminal_length)]]
+            [[0 for i in range(self.max_terminal_length)]
              for j in range(pad_length)]
 
         context_mask += [0] * pad_length
@@ -107,20 +107,19 @@ class C2VDataSet(Dataset):
                           self.target_dict else
                           self.target_dict["<unk>"])
         target.append(self.target_dict["<pad>"])  # eos
-        target_mask = [1] * target_mask
+        target_mask = [1] * (len(target)-1)  # sos
+        target_mask += [0] * \
+            (self.max_target_length - len(target))
         target += [self.target_dict["<pad>"]] * \
             (self.max_target_length - len(target))
-        target_mask += [1] * \
-            (self.max_target_length - len(target))
 
-        # print("start", starts, "path", paths, "end", ends, "target", target)
         return torch.tensor(starts, dtype=torch.long).to(self.device),\
-            torch.tensor(paths, dtype=torch.long).to(self.device), \
-            torch.tensor(ends, dtype=torch.long).to(self.device), \
-            torch.tensor(target, dtype=torch.long).to(self.device), \
+            torch.tensor(paths, dtype=torch.long).to(self.device),\
+            torch.tensor(ends, dtype=torch.long).to(self.device),\
+            torch.tensor(target, dtype=torch.long).to(self.device),\
             torch.tensor(
-            context_mask, dtype=torch.float).to(self.device), \
-            torch.tensor(start_mask, dtype=torch.float).to(self.device), \
-            torch.tensor(path_length, dtype=torch.int64).to(self.device), \
+            context_mask, dtype=torch.float).to(self.device),\
+            torch.tensor(start_mask, dtype=torch.float).to(self.device),\
+            torch.tensor(path_length, dtype=torch.int64).to(self.device),\
             torch.tensor(end_mask, dtype=torch.float).to(self.device),\
             torch.tensor(target_mask, dtype=torch.float).to(self.device)

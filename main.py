@@ -89,7 +89,6 @@ def main():
         sorted([w for w, c in target_counter.items() if c > 2]))}
     target_dict["<unk>"] = len(target_dict)
     target_dict["<bos>"] = len(target_dict)
-    target_dict["<eos>"] = len(target_dict)
     target_dict["<pad>"] = len(target_dict)
 
     c2v = Code2Vec(args, terminal_vocab_size=len(terminal_dict),
