@@ -74,7 +74,8 @@ class Code2Vec(nn.Module):
         self.Whc = nn.Linear(self.encode_size + decode_size, decode_size)
         self.output_linear = nn.Linear(decode_size, self.target_vocab_size)
 
-        self.loss = nn.NLLLoss(ignore_index=self.target_dict["<pad>"])
+        self.loss = nn.NLLLoss(
+            ignore_index=self.target_dict["<pad>"], reduction="sum")
 
     def forward(self, starts, paths, ends, targets, context_mask, start_mask,
                 path_length, end_mask, target_mask, is_eval):
@@ -139,7 +140,7 @@ class Code2Vec(nn.Module):
         if not is_eval:
             outputs = self.train_decode(
                 combined_context_vectors, context_mask, targets)
-            return self.loss(outputs[:, 1:].permute(0, 2, 1), targets[:, 1:])
+            return self.loss(outputs[:, 1:].permute(0, 2, 1), targets[:, 1:])/batch
         else:
             outputs = self.valid_decode(
                 combined_context_vectors, context_mask, targets)
