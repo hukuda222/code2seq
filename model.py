@@ -5,7 +5,7 @@ import torch.nn.functional as F
 import math
 import pickle
 import numpy as np
-
+import math
 NINF = -3.4 * math.pow(10, 38)
 """
 contextの形式は、
@@ -41,6 +41,17 @@ class Code2Vec(nn.Module):
             path_element_vocab_size, path_embed_size)
         self.target_element_embedding = nn.Embedding(
             self.target_vocab_size, decode_size)
+
+        # 埋め込み層の初期化
+        self.terminal_element_embedding.weight =\
+            torch.randn(terminal_vocab_size, terminal_embed_size) * \
+            math.sqrt(1 / terminal_embed_size)
+        self.path_element_embedding.weight =\
+            torch.randn(path_element_vocab_size, path_embed_size) * \
+            math.sqrt(1 / path_embed_size)
+        self.target_element_embedding.weight =\
+            torch.randn(self.target_vocab_size, decode_size) * \
+            math.sqrt(1 / decode_size)
 
         # pathをrnnでembedingするやつ、双方向なので隠れ層は1/2
         self.path_rnn = nn.LSTM(
