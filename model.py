@@ -20,7 +20,8 @@ class Code2Vec(nn.Module):
                  path_element_vocab_size,
                  target_dict, device,
                  path_embed_size=128, terminal_embed_size=128,
-                 path_rnn_size=128 * 2, decode_size=320):
+                 path_rnn_size=128 * 2, target_embed_size=128,
+                 decode_size=320):
 
         super(Code2Vec, self).__init__()
         self.decode_size = decode_size
@@ -40,7 +41,7 @@ class Code2Vec(nn.Module):
         self.path_element_embedding = nn.Embedding(
             path_element_vocab_size, path_embed_size)
         self.target_element_embedding = nn.Embedding(
-            self.target_vocab_size, decode_size)
+            self.target_vocab_size, target_embed_size)
 
         # 埋め込み層の初期化
         self.terminal_element_embedding.weight =\
@@ -50,8 +51,8 @@ class Code2Vec(nn.Module):
             nn.Parameter(torch.rand(path_element_vocab_size, path_embed_size) *
                          math.sqrt(1 / path_embed_size))
         self.target_element_embedding.weight =\
-            nn.Parameter(torch.rand(self.target_vocab_size, decode_size) *
-                         math.sqrt(1 / decode_size))
+            nn.Parameter(torch.rand(self.target_vocab_size, target_embed_size) *
+                         math.sqrt(1 / target_embed_size))
 
         # pathをrnnでembedingするやつ、双方向なので隠れ層は1/2
         self.path_rnn = nn.LSTM(
@@ -67,7 +68,7 @@ class Code2Vec(nn.Module):
         self.input_dropout = nn.Dropout(p=self.embed_drop)
 
         # decoderで使うrnnのcell
-        self.decoder_rnn = nn.LSTMCell(decode_size, decode_size)
+        self.decoder_rnn = nn.LSTMCell(target_embed_size, decode_size)
         self.Wa = nn.Linear(decode_size, decode_size)
         self.Whc = nn.Linear(self.encode_size + decode_size, decode_size)
         self.output_linear = nn.Linear(decode_size, self.target_vocab_size)
