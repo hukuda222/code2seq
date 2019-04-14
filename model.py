@@ -177,9 +177,8 @@ class Code2Vec(nn.Module):
         init_state = torch.sum(encode_context, 1) / context_length
 
         # encode_contextは (batch,max_e,encode_size)であるが、encode_size=decode_size
-        # ここは勾配を取らない
-        h_t = init_state.clone()
-        c_t = init_state.clone()
+        h_t = init_state
+        c_t = init_state
         all_output = torch.zeros(
             batch, 1, self.target_vocab_size).to(self.device)
 
@@ -188,7 +187,7 @@ class Code2Vec(nn.Module):
             h_t, c_t = self.decoder_rnn(
                 true_output[:, i], (h_t, c_t))
 
-            # self.Wa(h_t).t_()で、(batch,encode_size,1)
+            # self.Wa(h_t)で、(batch,encode_size,1)
             # encode_context (batch,max_e,encode_size)
             attn = torch.bmm(encode_context, self.Wa(h_t).unsqueeze(-1))
             # attentionのmask部分を0にする
@@ -217,12 +216,11 @@ class Code2Vec(nn.Module):
             batch, 1,  dtype=torch.long).to(self.device)*self.target_dict["<bos>"])
         """
         context_length = torch.sum(context_mask > 0)
-        # これできるの？
-        # (batch,encode_size)/(batch,1) のはず
+
+        # (batch,encode_size)/(batch,1)
         init_state = torch.sum(encode_context, 1) / context_length
 
         # encode_contextは (batch,max_e,encode_size)であるが、encode_size=decode_size
-        # 多分勾配を使わないような気もする
         h_t = init_state
         c_t = init_state
         all_output = torch.zeros(
@@ -232,7 +230,7 @@ class Code2Vec(nn.Module):
             # h_tは(batch,decode_size)
             h_t, c_t = self.decoder_rnn(output, (h_t, c_t))
 
-            # self.Wa(h_t).t_()で、(batch,encode_size,1)
+            # self.Wa(h_t)で、(batch,encode_size,1)
             # encode_context (batch,max_e,encode_size)
             attn = torch.bmm(encode_context, self.Wa(h_t).unsqueeze(-1))
             # attentionのmask部分を0にする
