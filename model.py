@@ -51,7 +51,8 @@ class Code2Vec(nn.Module):
             nn.Parameter(torch.rand(path_element_vocab_size, path_embed_size) *
                          math.sqrt(1 / path_embed_size))
         self.target_element_embedding.weight =\
-            nn.Parameter(torch.rand(self.target_vocab_size, target_embed_size) *
+            nn.Parameter(torch.rand(self.target_vocab_size,
+                                    target_embed_size) *
                          math.sqrt(1 / target_embed_size))
 
         # pathをrnnでembedingするやつ、双方向なので隠れ層は1/2
@@ -76,7 +77,7 @@ class Code2Vec(nn.Module):
         self.loss = nn.NLLLoss(ignore_index=self.target_dict["<pad>"])
 
     def forward(self, starts, paths, ends, targets, context_mask, start_mask,
-                path_length, end_mask, is_eval):
+                path_length, end_mask, target_mask, is_eval):
 
         batch, max_e, terminal_subword_size = starts.size()
         # embed,terminalはfastText,pathのみbilstm
@@ -125,7 +126,8 @@ class Code2Vec(nn.Module):
         # ここまでがencoder
         # 最終的にできるのは、(batch,max_e,decode_size)
         combined_context_vectors = self.input_linear(
-            combined_context_vectors.view(batch * max_e, -1)).view(batch, max_e, -1)
+            combined_context_vectors.view(batch * max_e, -1)).\
+            view(batch, max_e, -1)
         ccv_size = combined_context_vectors.size()
         combined_context_vectors = self.input_layer_norm(
             combined_context_vectors.view(-1, self.decode_size)).view(ccv_size)
