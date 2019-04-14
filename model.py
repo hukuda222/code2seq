@@ -178,8 +178,8 @@ class Code2Vec(nn.Module):
         init_state = torch.sum(encode_context, 1) / context_length
 
         # encode_contextは (batch,max_e,encode_size)であるが、encode_size=decode_size
-        h_t = init_state
-        c_t = init_state
+        h_t = init_state.clone()
+        c_t = init_state.clone()
         all_output = torch.zeros(
             batch, 1, self.target_vocab_size).to(self.device)
 
@@ -222,8 +222,8 @@ class Code2Vec(nn.Module):
         init_state = torch.sum(encode_context, 1) / context_length
 
         # encode_contextは (batch,max_e,encode_size)であるが、encode_size=decode_size
-        h_t = init_state
-        c_t = init_state
+        h_t = init_state.clone()
+        c_t = init_state.clone()
         all_output = torch.zeros(
             batch, 1, self.target_vocab_size).to(self.device)
 
