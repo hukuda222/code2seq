@@ -91,6 +91,9 @@ def main():
     target_dict["<bos>"] = len(target_dict)
     target_dict["<pad>"] = len(target_dict)
 
+    print("terminal_vocab:", len(terminal_dict))
+    print("target_vocab:", len(target_dict))
+
     c2v = Code2Vec(args, terminal_vocab_size=len(terminal_dict),
                    path_element_vocab_size=len(path_dict),
                    target_dict=target_dict, device=device)\
@@ -171,7 +174,7 @@ def calculate_results(true_positive, false_positive, false_negative):
 
 
 if __name__ == "__main__":
-    torch.manual_seed(23)
+    # torch.manual_seed(23)
     try:
         torch.multiprocessing.set_start_method("spawn")
     except RuntimeError:

@@ -62,7 +62,7 @@ class Code2Vec(nn.Module):
 
         # decoderで使うrnnのcell
         self.decoder_rnn = nn.LSTMCell(target_embed_size, decode_size)
-        self.Wa = nn.Linear(self.encode_size, self.encode_size)
+        self.Wa = nn.Linear(decode_size, decode_size)
         self.Whc = nn.Linear(self.encode_size + decode_size, decode_size)
         self.output_linear = nn.Linear(
             decode_size, self.target_vocab_size, bias=False)
@@ -146,9 +146,7 @@ class Code2Vec(nn.Module):
         predict = torch.argmax(output, 2)
         for pre, tar in zip(predict, targets):
             for pre_word in pre:
-                if pre_word == self.target_dict["<pad>"]:
-                    break
-                elif pre_word != self.target_dict["<pad>"] and \
+                if pre_word != self.target_dict["<pad>"] and \
                         pre_word != self.target_dict["<unk>"]:
                     if pre_word in tar:
                         true_positive += 1
@@ -183,7 +181,7 @@ class Code2Vec(nn.Module):
             h_t, c_t = self.decoder_rnn(
                 true_output[:, i], (h_t, c_t))
 
-            # self.Wa(h_t)で、(batch,encode_size,1)
+            # self.Wa(h_t).unsqueeze(-1)で、(batch,encode_size,1)
             # encode_context (batch,max_e,encode_size)
             attn = torch.bmm(encode_context, self.Wa(h_t).unsqueeze(-1))
             # attentionのmask部分を0にする
@@ -198,6 +196,7 @@ class Code2Vec(nn.Module):
             h_tc = torch.cat([h_t, context], dim=1)
             output = F.tanh(self.Whc(h_tc))
             output = self.output_linear(output).unsqueeze(1)
+
             all_output = torch.cat([all_output, output], dim=1)
 
         return all_output
@@ -206,6 +205,7 @@ class Code2Vec(nn.Module):
         batch, max_e, _ = encode_context.size()
         output = targets[:, 0].clone()
         output = self.target_element_embedding(output)
+        print(output)
         """
         self.target_element_embedding(torch.ones(
             batch, 1,  dtype=torch.long).to(self.device)\
