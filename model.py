@@ -57,16 +57,17 @@ class Code2Vec(nn.Module):
         self.input_linear = nn.Linear(
             terminal_embed_size * 2 + path_rnn_size, self.encode_size,
             bias=False)
-        self.input_layer_norm = nn.LayerNorm(decode_size)
+        # self.input_layer_norm = nn.LayerNorm(decode_size)
         self.input_dropout = nn.Dropout(p=self.embed_drop)
 
         # decoderで使うrnnのcell
         self.decoder_rnn = nn.LSTMCell(target_embed_size, decode_size)
-        self.Wa = nn.Linear(decode_size, decode_size)
+        self.Wa = nn.Linear(self.encode_size, self.encode_size)
         self.Whc = nn.Linear(self.encode_size + decode_size, decode_size)
-        self.output_linear = nn.Linear(decode_size, self.target_vocab_size)
+        self.output_linear = nn.Linear(
+            decode_size, self.target_vocab_size, bias=False)
 
-        self.loss = nn.NLLLoss(reduction="none")
+        self.loss = nn.CrossEntropyLoss(reduction="none")
 
     def forward(self, starts, paths, ends, targets, context_mask, start_mask,
                 path_length, end_mask, target_mask, is_eval):
@@ -120,9 +121,9 @@ class Code2Vec(nn.Module):
         combined_context_vectors = self.input_linear(
             combined_context_vectors.view(batch * max_e, -1)).\
             view(batch, max_e, -1)
-        ccv_size = combined_context_vectors.size()
-        combined_context_vectors = self.input_layer_norm(
-            combined_context_vectors.view(-1, self.decode_size)).view(ccv_size)
+        # ccv_size = combined_context_vectors.size()
+        # combined_context_vectors = self.input_layer_norm(
+        #    combined_context_vectors.view(-1, self.decode_size)).view(ccv_size)
         combined_context_vectors = torch.tanh(combined_context_vectors)
         combined_context_vectors = self.input_dropout(
             combined_context_vectors)
@@ -131,8 +132,9 @@ class Code2Vec(nn.Module):
         if not is_eval:
             outputs = self.train_decode(
                 combined_context_vectors, context_mask, targets)
-            return torch.sum(self.loss(outputs[:, 1:].permute(0, 2, 1),
-                                       targets[:, 1:]) * target_mask) / batch
+            result_loss = self.loss(outputs[:, 1:].permute(0, 2, 1),
+                                    targets[:, 1:]) * target_mask
+            return torch.sum(result_loss) / batch
         else:
             outputs = self.valid_decode(
                 combined_context_vectors, context_mask, targets)
@@ -165,8 +167,8 @@ class Code2Vec(nn.Module):
         true_output = self.target_element_embedding(targets.view(
             batch * self.generate_target_size, -1)).\
             view(batch, self.generate_target_size, -1)
-
-        context_length = torch.sum(context_mask > 0)
+        context_length = torch.sum(
+            context_mask > 0, dim=1, keepdim=True, dtype=torch.float)
         # (batch,encode_size)/(batch,1) のはず
         init_state = torch.sum(encode_context, 1) / context_length
 
@@ -195,9 +197,8 @@ class Code2Vec(nn.Module):
                                 encode_context).squeeze(1)
             h_tc = torch.cat([h_t, context], dim=1)
             output = F.tanh(self.Whc(h_tc))
-            output_ = F.log_softmax(
-                self.output_linear(output), dim=1).unsqueeze(1)
-            all_output = torch.cat([all_output, output_], dim=1)
+            output = self.output_linear(output).unsqueeze(1)
+            all_output = torch.cat([all_output, output], dim=1)
 
         return all_output
 
@@ -210,7 +211,8 @@ class Code2Vec(nn.Module):
             batch, 1,  dtype=torch.long).to(self.device)\
               *self.target_dict["<bos>"])
         """
-        context_length = torch.sum(context_mask > 0)
+        context_length = torch.sum(
+            context_mask > 0, dim=1, keepdim=True, dtype=torch.float)
 
         # (batch,encode_size)/(batch,1)
         init_state = torch.sum(encode_context, 1) / context_length
@@ -240,7 +242,7 @@ class Code2Vec(nn.Module):
             h_tc = torch.cat([h_t, context], dim=1)
             output = F.tanh(self.Whc(h_tc))
             # こっちはあとで使う
-            output_ = F.log_softmax(
+            output_ = F.softmax(
                 self.output_linear(output), dim=1)
             output = torch.argmax(output_, dim=1)
             output = self.target_element_embedding(output)

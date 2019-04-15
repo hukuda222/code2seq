@@ -49,7 +49,7 @@ def main():
                         help='length of context')
     parser.add_argument('--terminal_length', type=int, default=5,
                         help='length of terminal')
-    parser.add_argument('--path_length', type=int, default=8 + 1,
+    parser.add_argument('--path_length', type=int, default=9,
                         help='length of path')
     parser.add_argument('--target_length', type=int, default=7,
                         help='length of target')
@@ -79,14 +79,14 @@ def main():
     test_h5 = h5py.File(args.validpath, 'r')
 
     terminal_dict = {w: i for i, w in enumerate(
-        sorted([w for w, c in terminal_counter.items() if c > 2]))}
+        sorted([w for w, c in terminal_counter.items() if c > 0]))}
     terminal_dict["<unk>"] = len(terminal_dict)
     terminal_dict["<pad>"] = len(terminal_dict)
     path_dict = {w: i for i, w in enumerate(sorted(path_counter.keys()))}
     path_dict["<unk>"] = len(path_dict)
     path_dict["<pad>"] = len(path_dict)
     target_dict = {w: i for i, w in enumerate(
-        sorted([w for w, c in target_counter.items() if c > 2]))}
+        sorted([w for w, c in target_counter.items() if c > 0]))}
     target_dict["<unk>"] = len(target_dict)
     target_dict["<bos>"] = len(target_dict)
     target_dict["<pad>"] = len(target_dict)
@@ -123,6 +123,7 @@ def main():
     for epoch in range(args.epoch):
         if not args.eval:
             sum_loss = 0
+            train_count = 0
             for data in tqdm.tqdm(trainloader):
                 # scheduler.step()
                 optimizer.zero_grad()
@@ -130,7 +131,8 @@ def main():
                 loss.backward()
                 optimizer.step()
                 sum_loss += loss.item()
-            print(epoch, sum_loss)
+                train_count += 1
+            print(epoch, sum_loss/train_count)
             sum_loss = 0
         true_positive, false_positive, false_negative = 0, 0, 0
         for data in tqdm.tqdm(validloader):
