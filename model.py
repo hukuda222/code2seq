@@ -182,7 +182,9 @@ class Code2Vec(nn.Module):
             # attentionのmask部分を0にする
             # attn:(batch,max_e,1)
             # context_mask:(batch,max_e)
-            attn = attn.squeeze(-1) * context_mask
+            n_context_mask = (context_mask == 0).type(torch.float)*-100000
+            attn = attn.squeeze(-1)
+            attn = attn + n_context_mask
 
             attn_weight = F.softmax(attn, dim=1)
             # context:(batch,1,decode_size) ->(batch,decode_size)
@@ -227,7 +229,8 @@ class Code2Vec(nn.Module):
             # attentionのmask部分を0にする
             # attn:(batch,max_e,1)
             # context_mask:(batch,max_e)
-            attn = attn.squeeze(-1) * context_mask
+            n_context_mask = (context_mask == 0).type(torch.float)*-100000
+            attn = attn.squeeze(-1) + n_context_mask
 
             attn_weight = F.softmax(attn, dim=1)
             # context:(batch,1,decode_size)
