@@ -132,14 +132,16 @@ def main():
                 optimizer.step()
                 sum_loss += loss.item()
                 if train_count % 250 == 0 and train_count != 0:
-                    print(sum_loss/250)
+                    print(sum_loss / 250)
                     sum_loss = 0
                 train_count += 1
             sum_loss = 0
         true_positive, false_positive, false_negative = 0, 0, 0
         for data in tqdm.tqdm(validloader):
-            true_positive_, false_positive_, false_negative_ = c2v(
-                *data, is_eval=True)
+            c2v.eval()
+            with torch.no_grad():
+                true_positive_, false_positive_, false_negative_ = c2v(
+                    *data, is_eval=True)
             true_positive += true_positive_
             false_positive += false_positive_
             false_negative += false_negative_

@@ -63,6 +63,7 @@ class Code2Vec(nn.Module):
         self.decoder_rnn = nn.LSTMCell(target_embed_size, decode_size)
         # self.Wa = nn.Linear(decode_size, decode_size)
         self.Whc = nn.Linear(self.decode_size + self.decode_size, decode_size)
+        self.decoder_batch_norm = nn.BatchNorm1d(decode_size, affine=False)
         self.output_linear = nn.Linear(
             decode_size, self.target_vocab_size, bias=False)
 
@@ -186,7 +187,7 @@ class Code2Vec(nn.Module):
             # attentionのmask部分を0にする
             # attn:(batch,max_e,1)
             # context_mask:(batch,max_e)
-            n_context_mask = (context_mask == 0).type(torch.float)*-100000
+            n_context_mask = (context_mask == 0).type(torch.float) * -100000
             attn = attn.squeeze(-1)
             attn = attn + n_context_mask
 
@@ -195,7 +196,10 @@ class Code2Vec(nn.Module):
             context = torch.bmm(attn_weight.unsqueeze(1),
                                 encode_context).squeeze(1)
             h_tc = torch.cat([h_t, context], dim=1)
-            output = torch.tanh(self.Whc(h_tc))
+
+            output = self.Whc(h_tc)
+            output = self.decoder_batch_norm(output)
+            output = torch.tanh(output)
             output = self.output_linear(output).unsqueeze(1)
 
             all_output = torch.cat([all_output, output], dim=1)
@@ -233,7 +237,7 @@ class Code2Vec(nn.Module):
             # attentionのmask部分を0にする
             # attn:(batch,max_e,1)
             # context_mask:(batch,max_e)
-            n_context_mask = (context_mask == 0).type(torch.float)*-100000
+            n_context_mask = (context_mask == 0).type(torch.float) * -100000
             attn = attn.squeeze(-1) + n_context_mask
 
             attn_weight = F.softmax(attn, dim=1)
@@ -241,7 +245,11 @@ class Code2Vec(nn.Module):
             context = torch.bmm(attn_weight.unsqueeze(1),
                                 encode_context).squeeze(1)
             h_tc = torch.cat([h_t, context], dim=1)
-            output = torch.tanh(self.Whc(h_tc))
+            output = self.Whc(h_tc)
+            output = self.decoder_batch_norm(output)
+            output = torch.tanh(output)
+            output = self.output_linear(output).unsqueeze(1)
+
             # こっちはあとで使う
             output_ = F.softmax(
                 self.output_linear(output), dim=1)
