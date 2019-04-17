@@ -57,10 +57,11 @@ class Code2Vec(nn.Module):
             terminal_embed_size * 2 + path_rnn_size, self.decode_size,
             bias=False)
         self.input_dropout = nn.Dropout(p=self.embed_drop)
+        self.input_layer_norm = nn.LayerNorm(self.decode_size)
 
         # decoderで使うrnnのcell
         self.decoder_rnn = nn.LSTMCell(target_embed_size, decode_size)
-        self.Wa = nn.Linear(decode_size, decode_size)
+        # self.Wa = nn.Linear(decode_size, decode_size)
         self.Whc = nn.Linear(self.decode_size + self.decode_size, decode_size)
         self.output_linear = nn.Linear(
             decode_size, self.target_vocab_size, bias=False)
@@ -119,6 +120,9 @@ class Code2Vec(nn.Module):
         combined_context_vectors = self.input_linear(
             combined_context_vectors.view(batch * max_e, -1)).\
             view(batch, max_e, -1)
+        ccv_size = combined_context_vectors.size()
+        combined_context_vectors = self.input_layer_norm(
+            combined_context_vectors.view(-1, self.encode_size)).view(ccv_size)
         combined_context_vectors = torch.tanh(combined_context_vectors)
         combined_context_vectors = self.input_dropout(
             combined_context_vectors)
@@ -178,7 +182,7 @@ class Code2Vec(nn.Module):
 
             # self.Wa(h_t).unsqueeze(-1)で、(batch,decode_size,1)
             # encode_context (batch,max_e,decode_size)
-            attn = torch.bmm(encode_context, self.Wa(h_t).unsqueeze(-1))
+            attn = torch.bmm(encode_context, h_t.unsqueeze(-1))
             # attentionのmask部分を0にする
             # attn:(batch,max_e,1)
             # context_mask:(batch,max_e)
@@ -191,7 +195,7 @@ class Code2Vec(nn.Module):
             context = torch.bmm(attn_weight.unsqueeze(1),
                                 encode_context).squeeze(1)
             h_tc = torch.cat([h_t, context], dim=1)
-            output = F.tanh(self.Whc(h_tc))
+            output = torch.tanh(self.Whc(h_tc))
             output = self.output_linear(output).unsqueeze(1)
 
             all_output = torch.cat([all_output, output], dim=1)
@@ -225,7 +229,7 @@ class Code2Vec(nn.Module):
 
             # self.Wa(h_t).unsqueeze(-1)で、(batch,decode_size,1)
             # encode_context (batch,max_e,decode_size)
-            attn = torch.bmm(encode_context, self.Wa(h_t).unsqueeze(-1))
+            attn = torch.bmm(encode_context, h_t.unsqueeze(-1))
             # attentionのmask部分を0にする
             # attn:(batch,max_e,1)
             # context_mask:(batch,max_e)
@@ -237,7 +241,7 @@ class Code2Vec(nn.Module):
             context = torch.bmm(attn_weight.unsqueeze(1),
                                 encode_context).squeeze(1)
             h_tc = torch.cat([h_t, context], dim=1)
-            output = F.tanh(self.Whc(h_tc))
+            output = torch.tanh(self.Whc(h_tc))
             # こっちはあとで使う
             output_ = F.softmax(
                 self.output_linear(output), dim=1)

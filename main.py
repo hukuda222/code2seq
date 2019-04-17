@@ -112,30 +112,29 @@ def main():
         C2VDataSet(args, test_h5, args.validnum,
                    terminal_dict, path_dict, target_dict, device),
         batch_size=args.batchsize,
-        shuffle=False, num_workers=args.num_worker)
+        shuffle=True, num_workers=args.num_worker)
 
     optimizer = optim.SGD(c2v.parameters(), lr=0.01,
-                          momentum=0.95, weight_decay=0.01)
-    """
+                          momentum=0.95)
     scheduler = optim.lr_scheduler.LambdaLR(
         optimizer,
         lr_lambda=lambda e: 0.01 * pow(0.95, (e * args.batchsize / args.trainnum)))
-    optimizer = torch.optim.Adam(c2v.parameters(), lr=0.01, betas=(
-        0.9, 0.999), eps=1e-08, weight_decay=0.001, amsgrad=False)
-    """
+
     for epoch in range(args.epoch):
         if not args.eval:
             sum_loss = 0
             train_count = 0
             for data in tqdm.tqdm(trainloader):
-                # scheduler.step()
+                scheduler.step()
                 optimizer.zero_grad()
                 loss = c2v(*data, is_eval=False)
                 loss.backward()
                 optimizer.step()
                 sum_loss += loss.item()
+                if train_count % 250 == 0 and train_count != 0:
+                    print(sum_loss/250)
+                    sum_loss = 0
                 train_count += 1
-            print(epoch, sum_loss/train_count)
             sum_loss = 0
         true_positive, false_positive, false_negative = 0, 0, 0
         for data in tqdm.tqdm(validloader):
@@ -175,8 +174,8 @@ def calculate_results(true_positive, false_positive, false_negative):
 
 if __name__ == "__main__":
     # torch.manual_seed(23)
-    try:
-        torch.multiprocessing.set_start_method("spawn")
-    except RuntimeError:
-        pass
+    # try:
+    #    torch.multiprocessing.set_start_method("spawn")
+    # except RuntimeError:
+    #    pass
     main()
