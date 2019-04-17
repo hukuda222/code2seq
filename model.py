@@ -123,7 +123,7 @@ class Code2Vec(nn.Module):
             view(batch, max_e, -1)
         ccv_size = combined_context_vectors.size()
         combined_context_vectors = self.input_layer_norm(
-            combined_context_vectors.view(-1, self.encode_size)).view(ccv_size)
+            combined_context_vectors.view(-1, self.decode_size)).view(ccv_size)
         combined_context_vectors = torch.tanh(combined_context_vectors)
         combined_context_vectors = self.input_dropout(
             combined_context_vectors)
@@ -138,9 +138,9 @@ class Code2Vec(nn.Module):
         else:
             outputs = self.valid_decode(
                 combined_context_vectors, context_mask, targets)
-            return self.eval(outputs[:, 1:], targets[:, 1:])
+            return self.get_eval_result(outputs[:, 1:], targets[:, 1:])
 
-    def eval(self, output, targets):
+    def get_eval_result(self, output, targets):
         true_positive, false_positive, false_negative = 0, 0, 0
         batch, _, _ = output.size()
         predict = torch.argmax(output, 2)
@@ -248,7 +248,6 @@ class Code2Vec(nn.Module):
             output = self.Whc(h_tc)
             output = self.decoder_batch_norm(output)
             output = torch.tanh(output)
-            output = self.output_linear(output).unsqueeze(1)
 
             # こっちはあとで使う
             output_ = F.softmax(

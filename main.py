@@ -116,16 +116,17 @@ def main():
 
     optimizer = optim.SGD(c2v.parameters(), lr=0.01,
                           momentum=0.95)
-    scheduler = optim.lr_scheduler.LambdaLR(
-        optimizer,
-        lr_lambda=lambda e: 0.01 * pow(0.95, (e * args.batchsize / args.trainnum)))
+    # scheduler = optim.lr_scheduler.LambdaLR(
+    #    optimizer,
+    #    lr_lambda=lambda e: 0.01 * pow(0.95, (e * args.batchsize / args.trainnum)))
 
     for epoch in range(args.epoch):
         if not args.eval:
             sum_loss = 0
             train_count = 0
+            c2v.train()
             for data in tqdm.tqdm(trainloader):
-                scheduler.step()
+                # scheduler.step()
                 optimizer.zero_grad()
                 loss = c2v(*data, is_eval=False)
                 loss.backward()
