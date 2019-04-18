@@ -79,14 +79,14 @@ def main():
     test_h5 = h5py.File(args.validpath, 'r')
 
     terminal_dict = {w: i for i, w in enumerate(
-        sorted([w for w, c in terminal_counter.items() if c > 0]))}
+        sorted([w for w, c in terminal_counter.items() if c > 1]))}
     terminal_dict["<unk>"] = len(terminal_dict)
     terminal_dict["<pad>"] = len(terminal_dict)
     path_dict = {w: i for i, w in enumerate(sorted(path_counter.keys()))}
     path_dict["<unk>"] = len(path_dict)
     path_dict["<pad>"] = len(path_dict)
     target_dict = {w: i for i, w in enumerate(
-        sorted([w for w, c in target_counter.items() if c > 0]))}
+        sorted([w for w, c in target_counter.items() if c > 1]))}
     target_dict["<unk>"] = len(target_dict)
     target_dict["<bos>"] = len(target_dict)
     target_dict["<pad>"] = len(target_dict)
@@ -116,17 +116,16 @@ def main():
 
     optimizer = optim.SGD(c2v.parameters(), lr=0.01,
                           momentum=0.95)
-    # scheduler = optim.lr_scheduler.LambdaLR(
-    #    optimizer,
-    #    lr_lambda=lambda e: 0.01 * pow(0.95, (e * args.batchsize / args.trainnum)))
+    scheduler = optim.lr_scheduler.StepLR(
+        optimizer, step_size=1, gamma=0.95, last_epoch=-1)
 
     for epoch in range(args.epoch):
         if not args.eval:
             sum_loss = 0
             train_count = 0
             c2v.train()
+            scheduler.step()  # epochごとなのでここ
             for data in tqdm.tqdm(trainloader):
-                # scheduler.step()
                 optimizer.zero_grad()
                 loss = c2v(*data, is_eval=False)
                 loss.backward()
