@@ -3,7 +3,7 @@ from model import Code2Seq
 import pickle
 import torch.optim as optim
 from torch.utils.data import DataLoader
-from dataset import C2DataSet
+from dataset import C2SDataSet
 import torch
 import torch.nn.functional as F
 import torch.nn as nn
