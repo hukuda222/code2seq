@@ -63,7 +63,7 @@ class Code2Vec(nn.Module):
         self.decoder_rnn = nn.LSTMCell(target_embed_size, decode_size)
         # self.Wa = nn.Linear(decode_size, decode_size)
         self.Whc = nn.Linear(self.decode_size + self.decode_size, decode_size)
-        #self.decoder_batch_norm = nn.BatchNorm1d(decode_size, affine=False)
+        self.decoder_layer_norm = nn.LayerNorm(self.decode_size)
         self.output_linear = nn.Linear(
             decode_size, self.target_vocab_size, bias=False)
 
@@ -198,7 +198,7 @@ class Code2Vec(nn.Module):
             h_tc = torch.cat([h_t, context], dim=1)
 
             output = self.Whc(h_tc)
-            #output = self.decoder_batch_norm(output)
+            output = self.decoder_layer_norm(output)
             output = torch.tanh(output)
             output = self.output_linear(output).unsqueeze(1)
 
@@ -246,7 +246,7 @@ class Code2Vec(nn.Module):
                                 encode_context).squeeze(1)
             h_tc = torch.cat([h_t, context], dim=1)
             output = self.Whc(h_tc)
-            #output = self.decoder_batch_norm(output)
+            output = self.decoder_layer_norm(output)
             output = torch.tanh(output)
 
             # こっちはあとで使う
