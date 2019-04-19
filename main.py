@@ -1,9 +1,9 @@
 import argparse
-from model import Code2Vec
+from model import Code2Seq
 import pickle
 import torch.optim as optim
 from torch.utils.data import DataLoader
-from dataset import C2VDataSet
+from dataset import C2DataSet
 import torch
 import torch.nn.functional as F
 import torch.nn as nn
@@ -94,27 +94,27 @@ def main():
     print("terminal_vocab:", len(terminal_dict))
     print("target_vocab:", len(target_dict))
 
-    c2v = Code2Vec(args, terminal_vocab_size=len(terminal_dict),
+    c2s = Code2Seq(args, terminal_vocab_size=len(terminal_dict),
                    path_element_vocab_size=len(path_dict),
                    target_dict=target_dict, device=device)\
         .to(device)
 
     if args.resume != "":
-        c2v.load_state_dict(torch.load(args.resume))
+        c2s.load_state_dict(torch.load(args.resume))
 
     trainloader = DataLoader(
-        C2VDataSet(args, train_h5, args.trainnum,
+        C2SDataSet(args, train_h5, args.trainnum,
                    terminal_dict, path_dict, target_dict, device),
         batch_size=args.batchsize,
         shuffle=True, num_workers=args.num_worker)
 
     validloader = DataLoader(
-        C2VDataSet(args, test_h5, args.validnum,
+        C2SDataSet(args, test_h5, args.validnum,
                    terminal_dict, path_dict, target_dict, device),
         batch_size=args.batchsize,
         shuffle=True, num_workers=args.num_worker)
 
-    optimizer = optim.SGD(c2v.parameters(), lr=0.01,
+    optimizer = optim.SGD(c2s.parameters(), lr=0.01,
                           momentum=0.95)
     scheduler = optim.lr_scheduler.StepLR(
         optimizer, step_size=1, gamma=0.95, last_epoch=-1)
@@ -123,11 +123,11 @@ def main():
         if not args.eval:
             sum_loss = 0
             train_count = 0
-            c2v.train()
+            c2s.train()
             scheduler.step()  # epochごとなのでここ
             for data in tqdm.tqdm(trainloader):
                 optimizer.zero_grad()
-                loss = c2v(*data, is_eval=False)
+                loss = c2s(*data, is_eval=False)
                 loss.backward()
                 optimizer.step()
                 sum_loss += loss.item()
@@ -138,9 +138,9 @@ def main():
             sum_loss = 0
         true_positive, false_positive, false_negative = 0, 0, 0
         for data in tqdm.tqdm(validloader):
-            c2v.eval()
+            c2s.eval()
             with torch.no_grad():
-                true_positive_, false_positive_, false_negative_ = c2v(
+                true_positive_, false_positive_, false_negative_ = c2s(
                     *data, is_eval=True)
             true_positive += true_positive_
             false_positive += false_positive_
@@ -153,9 +153,9 @@ def main():
         if args.eval:
             break
         if args.savename != "":
-            torch.save(c2v.state_dict(), args.savename + str(epoch) + ".model")
+            torch.save(c2s.state_dict(), args.savename + str(epoch) + ".model")
     if args.savename != "":
-        torch.save(c2v.state_dict(), args.savename + ".model")
+        torch.save(c2s.state_dict(), args.savename + ".model")
 
 
 def calculate_results(true_positive, false_positive, false_negative):
