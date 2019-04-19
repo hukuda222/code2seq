@@ -115,7 +115,6 @@ class Code2Seq(nn.Module):
         combined_context_vectors = torch.cat(
             (embed_fasttext_start, rnn_embed_path, embed_fasttext_end), dim=2)
 
-        # FNN, Layer Normalization, tanh
         # ここまでがencoder
         # 最終的にできるのは、(batch,max_e,decode_size)
         combined_context_vectors = self.input_linear(
