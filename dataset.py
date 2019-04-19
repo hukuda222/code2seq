@@ -6,7 +6,7 @@ from numpy import random as rnd
 import h5py
 
 
-class C2VDataSet(Dataset):
+class C2SDataSet(Dataset):
     def __init__(self, args, filedata, data_size, terminal_dict, path_dict,
                  target_dict, device):
         super(Dataset, self).__init__()
