@@ -7,7 +7,7 @@ import pickle
 import numpy as np
 
 
-class Code2Vec(nn.Module):
+class Code2Seq(nn.Module):
     def __init__(self, args, terminal_vocab_size,
                  path_element_vocab_size,
                  target_dict, device,
