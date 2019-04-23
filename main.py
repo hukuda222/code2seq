@@ -135,7 +135,6 @@ def main():
                     print(sum_loss / 250)
                     sum_loss = 0
                 train_count += 1
-            sum_loss = 0
         true_positive, false_positive, false_negative = 0, 0, 0
         for data in tqdm.tqdm(validloader):
             c2s.eval()
@@ -175,9 +174,4 @@ def calculate_results(true_positive, false_positive, false_negative):
 
 
 if __name__ == "__main__":
-    # torch.manual_seed(23)
-    # try:
-    #    torch.multiprocessing.set_start_method("spawn")
-    # except RuntimeError:
-    #    pass
     main()
