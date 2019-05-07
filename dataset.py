@@ -50,11 +50,11 @@ class C2SDataSet(Dataset):
                 start.append(self.terminal_dict[ter1_s] if ter1_s in
                              self.terminal_dict else
                              self.terminal_dict["<unk>"])
+            start_mask.append([1] * len(start) + [0] *
+                (self.max_terminal_length - len(start)))
             start += [self.terminal_dict["<pad>"]] * \
                 (self.max_terminal_length - len(start))
             starts.append(start)
-            start_mask.append([1] * len(start) + [0] *
-                              (self.max_terminal_length - len(start)))
 
             # ここでpath
             path = []
@@ -62,9 +62,10 @@ class C2SDataSet(Dataset):
                 path.append(
                     self.path_dict[path_e] if path_e in
                     self.path_dict else self.path_dict["<unk>"])
+            path_length.append(len(path))          
             path += [self.path_dict["<pad>"]] * \
                 (self.max_path_length - len(path))
-            path_length.append(len(path))
+
             paths.append(path)
 
             # ここで二つ目の末端文字列
@@ -73,11 +74,11 @@ class C2SDataSet(Dataset):
                 end.append(self.terminal_dict[ter2_s] if ter2_s in
                            self.terminal_dict else
                            self.terminal_dict["<unk>"])
+            end_mask.append([1] * len(end) + [0] *
+                            (self.max_terminal_length - len(end)))                
             end += [self.terminal_dict["<pad>"]] * \
                 (self.max_terminal_length - len(end))
             ends.append(end)
-            end_mask.append([1] * len(end) + [0] *
-                            (self.max_terminal_length - len(end)))
 
             context_mask.append(1)
 
