@@ -85,7 +85,7 @@ class Code2Seq(nn.Module):
                  self.terminal_embed_size)
         # こいつも(batch,max_e,terminal_embed__size)のはず
         embed_fasttext_end = torch.sum(
-            embed_element_end * start_mask.unsqueeze(-1), 2)
+            embed_element_end * end_mask.unsqueeze(-1), 2)
 
         _, _, path_size = paths.size()
         embed_element_path = self.path_element_embedding(
