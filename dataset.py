@@ -1,9 +1,6 @@
 from torch.utils.data import Dataset
 import torch
-import linecache
-import re
 from numpy import random as rnd
-import h5py
 
 
 class C2SDataSet(Dataset):
@@ -51,7 +48,7 @@ class C2SDataSet(Dataset):
                              self.terminal_dict else
                              self.terminal_dict["<unk>"])
             start_mask.append([1] * len(start) + [0] *
-                (self.max_terminal_length - len(start)))
+                              (self.max_terminal_length - len(start)))
             start += [self.terminal_dict["<pad>"]] * \
                 (self.max_terminal_length - len(start))
             starts.append(start)
@@ -62,7 +59,7 @@ class C2SDataSet(Dataset):
                 path.append(
                     self.path_dict[path_e] if path_e in
                     self.path_dict else self.path_dict["<unk>"])
-            path_length.append(len(path))          
+            path_length.append(len(path))
             path += [self.path_dict["<pad>"]] * \
                 (self.max_path_length - len(path))
 
@@ -75,7 +72,7 @@ class C2SDataSet(Dataset):
                            self.terminal_dict else
                            self.terminal_dict["<unk>"])
             end_mask.append([1] * len(end) + [0] *
-                            (self.max_terminal_length - len(end)))                
+                            (self.max_terminal_length - len(end)))
             end += [self.terminal_dict["<pad>"]] * \
                 (self.max_terminal_length - len(end))
             ends.append(end)

@@ -1,10 +1,7 @@
 import torch
 import torch.nn as nn
-from torch.nn.parameter import Parameter
 import torch.nn.functional as F
 import math
-import pickle
-import numpy as np
 
 
 class Code2Seq(nn.Module):
@@ -15,7 +12,7 @@ class Code2Seq(nn.Module):
                  path_rnn_size=128 * 2, target_embed_size=128,
                  decode_size=320):
 
-        super(Code2Vec, self).__init__()
+        super(Code2Seq, self).__init__()
         self.decode_size = decode_size
         self.terminal_embed_size = terminal_embed_size
         self.path_embed_size = path_embed_size
