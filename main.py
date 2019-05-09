@@ -124,6 +124,12 @@ def main():
 
     for epoch in range(args.epoch):
         if not args.eval:
+            trainloader = DataLoader(
+                C2SDataSet(args, train_h5, args.trainnum,
+                        terminal_dict, path_dict, target_dict, device),
+                batch_size=args.batchsize,
+                shuffle=True, num_workers=args.num_worker)
+
             sum_loss = 0
             train_count = 0
             c2s.train()
