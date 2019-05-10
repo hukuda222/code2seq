@@ -121,11 +121,11 @@ class Code2Seq(nn.Module):
         combined_context_vectors = self.input_layer_norm(
             combined_context_vectors.view(-1, self.decode_size)).view(ccv_size)
         combined_context_vectors = torch.tanh(combined_context_vectors)
-        combined_context_vectors = self.input_dropout(
-            combined_context_vectors)
 
         # どうせ使わないので<bos>が入っている一つ目のやつを消してる
         if not is_eval:
+            combined_context_vectors = self.input_dropout(
+                combined_context_vectors)
             outputs = self.train_decode(
                 combined_context_vectors, context_mask, targets)
             result_loss = self.loss(outputs[:, 1:].permute(0, 2, 1),
@@ -206,11 +206,6 @@ class Code2Seq(nn.Module):
         batch, max_e, _ = encode_context.size()
         output = targets[:, 0].clone()
         output = self.target_element_embedding(output)
-        """
-        self.target_element_embedding(torch.ones(
-            batch, 1,  dtype=torch.long).to(self.device)\
-              *self.target_dict["<bos>"])
-        """
         context_length = torch.sum(
             context_mask > 0, dim=1, keepdim=True, dtype=torch.float)
 
