@@ -47,7 +47,7 @@ def main():
                         help="length of terminal")
     parser.add_argument("--path_length", type=int, default=9,
                         help="length of path")
-    parser.add_argument("--target_length", type=int, default=7,
+    parser.add_argument("--target_length", type=int, default=8,
                         help="length of target")
     parser.add_argument("--eval", action="store_true",
                         help="is eval")
