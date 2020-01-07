@@ -135,8 +135,8 @@ def main():
             c2s.train()
             scheduler.step()  # epochごとなのでここ
             for data in tqdm.tqdm(trainloader):
-                optimizer.zero_grad()
                 loss = c2s(*data, is_eval=False)
+                optimizer.zero_grad()
                 loss.backward()
                 optimizer.step()
                 sum_loss += loss.item()
